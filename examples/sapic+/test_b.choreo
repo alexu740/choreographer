@@ -1,0 +1,24 @@
+Sigma0:
+  public t1/0 t2/0
+
+Sigma:
+  public ok/0
+  private sk/1
+
+Algebra:
+  sfst(session(x,y))->x
+
+Protocol:
+  {
+    A : A, B, inv(A), pk(inv(B))
+    B : A, B, inv(B), pk(inv(A))
+  }
+
+  lock(A). new Na. new Nb . new Nc. unlock.
+  A->B: {
+    aenc(Na, pk(inv(B))). B->A:Na.nil
+  +
+    aenc(Nb, pk(inv(B))). B->A:Nb.nil
+  +
+    aenc(Nc, pk(inv(B))). B->A:Nc.nil
+  }

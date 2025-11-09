@@ -1,0 +1,51 @@
+theory NSPK
+begin
+builtins: asymmetric-encryption
+functions: ok/0, sk/1 [private], true/0 [private]
+equations:
+  sfst(session(x, y)) = x
+let A(A) =
+  in(B);
+  new Na;
+  new Nb;
+  new Nc;
+  in(choice);
+  if choice = 0 then
+    out(aenc(Na, pk(inv(B))));
+    in(X7);
+    if Na = X7 then
+      0
+  else
+    if choice = 1 then
+      out(aenc(Nb, pk(inv(B))));
+      in(X7);
+      if Nb = X7 then
+        0
+    else
+      if choice = 2 then
+        out(aenc(Nc, pk(inv(B))));
+        in(X7);
+        if Nc = X7 then
+          0
+let B(B) =
+  in(A);
+  in(X4);
+  let Na = adec(X4, inv(B)) in
+    let Na = adec(X4, inv(B)) in
+      let Na = adec(X4, inv(B)) in
+        out(Na);
+        0
+process: 
+  new dishonest;
+  out(dishonest);
+  out(priv(dishonest));
+  ! new agent;
+  event Honest(agent);
+  out(agent);
+  out(pk(priv(dishonest)));
+  ! (
+    A(agent)
+   | 
+    B(agent)
+  )
+end

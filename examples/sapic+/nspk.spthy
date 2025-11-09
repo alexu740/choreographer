@@ -1,0 +1,52 @@
+theory NSPK
+begin
+builtins: asymmetric-encryption
+functions: pair/2, true/0 [private], priv/1 [private]
+let A(A) =
+  in(B);
+  new Na;
+  event Witness(A, B, 'WeakAuthBAAtomicNa', Na);
+  out(aenc(pair(A, Na), pk(priv(B))));
+  in(X5);
+  let X6 = adec(X5, priv(A)) in
+    let pair(=Na, Nb) = X6 in
+      out(aenc(Nb, pk(priv(B))));
+      new sid;
+      event Request(A, B, 'StrongAuthABAtomicNb', Nb, sid);
+      event Secret(pair(Na, Nb), A, B);
+      0
+let B(B) =
+  in(A);
+  in(X4);
+  let X5 = adec(X4, priv(B)) in
+    let pair(=A, Na) = X5 in
+      new Nb;
+      event Witness(B, A, 'StrongAuthABAtomicNb', Nb);
+      out(aenc(pair(Na, Nb), pk(priv(A))));
+      in(X9);
+      let X10 = adec(X9, priv(B)) in
+        if X10 = Nb then
+          new sid;
+          event Request(B, A, 'WeakAuthBAAtomicNa', Na, sid);
+          event Secret(pair(Na, Nb), A, B);
+          0
+process: 
+  new dishonest;
+  out(dishonest);
+  out(priv(dishonest));
+  ! new agent;
+  event Honest(agent);
+  out(agent);
+  out(pk(priv(dishonest)));
+  ! (
+    A(agent)
+   | 
+    B(agent)
+  )
+lemma secrecy_A_B_PAIRNaNb :
+  "All A B x #i #agA #agB. ((Honest(A) @ agA & (Honest(B) @ agB & Secret(x, A, B) @ i)) ==> not(Ex #j. KU(x) @ j))"
+lemma weakAuth_B_A_Na :
+  "All B A WeakAuthBAAtomicNa t #i sid #ag. ((Honest(B) @ ag & Request(A, B, WeakAuthBAAtomicNa, t, sid) @ i) ==> Ex #j. Witness(B, A, WeakAuthBAAtomicNa, t) @ j)"
+lemma strongAuth_A_B_Nb :
+  "All A B StrongAuthABAtomicNb t #i sid #ag. ((Honest(A) @ ag & Request(B, A, StrongAuthABAtomicNb, t, sid) @ i) ==> Ex #j. (Witness(A, B, StrongAuthABAtomicNb, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(B, A, StrongAuthABAtomicNb, t, sid1) @ i1 & Request(B, A, StrongAuthABAtomicNb, t, sid2) @ i2) & not(sid1 = sid2)))))"
+end

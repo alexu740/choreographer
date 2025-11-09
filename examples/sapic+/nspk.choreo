@@ -1,0 +1,16 @@
+
+Protocol:
+  {
+    A : A, B, priv(A), pk(priv(B))
+    B : A, B, priv(B), pk(priv(A))
+  }
+
+  lock(A). new Na. unlock. A->B: aenc(pair(A, Na), pk(priv(B))).
+  lock(B). new Nb. unlock. B->A: aenc(pair(Na,Nb), pk(priv(A))).
+                           A->B: aenc(Nb, pk(priv(B))).
+  nil
+
+Goals:
+pair(Na, Nb) secret between A, B
+B weakly authenticates A on Na
+A authenticates B on Nb 

@@ -1,0 +1,26 @@
+Protocol:
+  {
+    A : A, B, s, sk(A,s)
+    B : A, B, s, sk(B,s)
+    s : A, B, s, sk(A,s), sk(B,s)
+  }
+
+  lock(B). new NB. unlock.
+    B->A: pair(pair(A,B), NB). 
+    lock(A). new NA. unlock.
+      A->s: pair(pair(A,B), pair(NA,NB)).
+      lock(s). new KAB. unlock. s->A: pair(senc(pair(pair(KAB,B), NA), sk(A,s)), senc(pair(pair(KAB,A), NB), sk(B,s))).
+                                A->B: senc(pair(pair(KAB,A), NB), sk(B,s)).
+                                    nil
+
+
+Goals:
+KAB secret between A, B, s
+A weakly authenticates s on KAB
+A weakly authenticates s on B
+B weakly authenticates s on KAB
+B weakly authenticates s on A
+A authenticates s on KAB
+A authenticates s on B
+B authenticates s on KAB
+B authenticates s on A

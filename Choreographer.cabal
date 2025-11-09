@@ -1,0 +1,152 @@
+cabal-version:   3.8
+name:            Choreographer
+version:         0.0.0.1
+license:         BSD-3-Clause
+license-file:    LICENSE
+author:          Nina Andrup Pedersen & Alex Ungureanu
+maintainer:      alexu740@gmail.com nina@andruppedersen.dk
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+library
+    hs-source-dirs: src
+    exposed-modules:
+        Compiler.Compiler,
+
+        Compiler.ToLocalBehavior.Translation,
+        Compiler.ToLocalBehavior.RecipeUtility,
+        Compiler.ToLocalBehavior.CheckGenerator,
+        Compiler.ToLocalBehavior.TermRewriter,
+        Compiler.ToLocalBehavior.TranslationCases.StateHint,
+        Compiler.ToLocalBehavior.TranslationCases.Lock,
+        Compiler.ToLocalBehavior.TranslationCases.Send,
+        Compiler.ToLocalBehavior.TranslationCases.Receive,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Atomic,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Condition,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Nonce,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.PrivacyExtension,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Read,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Unlock,
+        Compiler.ToLocalBehavior.TranslationCases.AtomicParts.Write,
+
+        Compiler.ToSapicPlus.Translation,
+        Compiler.ToSapicPlus.TranslationCases.Lock,
+        Compiler.ToSapicPlus.TranslationCases.AtomicCases,
+        Compiler.ToSapicPlus.TranslationCases.Send,
+        Compiler.ToSapicPlus.TranslationCases.Receive,
+        
+        Compiler.ToSapicPlus.RewriteSystem.Rule,
+        Compiler.ToSapicPlus.RewriteSystem.RewriteReceipt,
+        Compiler.ToSapicPlus.RewriteSystem.RewriteSystem,
+
+        Compiler.ToSapicPlus.SFrame,
+        Compiler.ToSapicPlus.CheckGenerator,
+        Compiler.ToSapicPlus.RecipeUtility,
+        Compiler.ToSapicPlus.RewriteSystem.TermRewriter,
+        Compiler.ToSapicPlus.RewriteSystem.EquationalTheoryExtension,
+        Compiler.ToSapicPlus.SyntacticSimplifier,
+        Compiler.ToSapicPlus.InitialKnowledgeDistributor,
+        Compiler.ToSapicPlus.PrettyPrinter,
+        Compiler.ToSapicPlus.SecurityGoalUtility,
+
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.BranchingSendTranslation,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.RedundantOperations,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.RemoveSeq,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.SeqLocalBehavior,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.SeqToNoname,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.SequentializeTranslation,
+        Compiler.ToNoname.ChoreoToNoname.TranslationSteps.SwapOperations,
+        Compiler.ToNoname.ChoreoToNoname.Compiler,
+        Compiler.ToNoname.ChoreoToNoname.InitialContext,
+        Compiler.ToNoname.ChoreoToNoname.InitialTransactions,
+        Compiler.ToNoname.Noname.FilePrinter,
+        Compiler.ToNoname.Noname.PrettyPrinter,
+        Compiler.ToNoname.Noname.Syntax,
+
+        Choreography.Frame,
+        Choreography.State,
+        Choreography.Enricher,
+
+        Types.Simple,
+        Types.Choreography,
+        Types.LocalBehavior,
+        Types.Rewrite,
+        Types.Signatures,
+        Types.ChoreographyProtocolShell,
+        Types.Sapic,
+        
+        Syntax.Util,
+        Syntax.Lexer,
+        Syntax.Parser,
+
+        Examples
+  other-modules:
+      -- any other internal modules
+  build-depends:
+      base       >=4.14 && <5,
+      text       >=2.0  && <2.1,
+      containers >=0.6  && <0.7,
+      array ^>=0.5.4.0
+      , pretty-simple >= 4.1
+      , random >= 1.3.1
+  build-tool-depends: 
+      alex:alex >= 3.0.5
+      , happy:happy >= 1.19.12
+  default-language: Haskell2010
+
+common warnings
+    ghc-options: -Wall
+
+executable Choreographer
+  hs-source-dirs:   app
+  main-is:          Main.hs
+  build-depends:
+      base       >=4.14 && <5
+    , Choreographer       
+    , text
+    , containers
+  default-language: Haskell2010
+
+test-suite sapic-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             sapic/Main.hs
+  build-depends:
+      base
+    , tasty              >=1.5 && <1.6
+    , tasty-hunit        >=0.10 && <0.11
+    , containers
+    , text
+    , Choreographer
+    , pretty-simple >= 4.1
+    , tasty-quickcheck
+    , QuickCheck
+  default-language:    Haskell2010
+
+test-suite Privacy-for-Choreographies-test
+    import:           warnings
+    default-language: Haskell2010
+    other-modules: 
+        Choreo.AnalysisTest
+        , Choreo.ComposeTest
+        , Choreo.FrameTest
+        , Choreo.TranslationTest
+        , Choreo.ParsingHelper
+        , Choreo.ParsingTest
+        , ChoreoToNoname.TranslationSteps.BranchingSendTranslationTest
+        , ChoreoToNoname.TranslationSteps.SequentializeTranslationTest
+    -- other-extensions:
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+
+    build-depends:
+        base >=4.17.2.1
+        , Choreographer
+        , QuickCheck >= 2.14
+        , HUnit
+        , containers >= 0.6.7
+        , text >= 2.0.0
+        , tasty >= 1.4
+        , tasty-hunit >= 0.10
+        , tasty-quickcheck

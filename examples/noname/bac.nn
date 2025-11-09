@@ -1,0 +1,109 @@
+# SPDX-FileCopyrightText: 2025 Technical University of Denmark
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+############################################################################
+# Generated from Choreography: bac.choreo                                  #
+############################################################################
+
+Sigma0:
+   public t1/0 t2/0
+   
+Sigma:
+   public N0/0 N1/0 N2/0 N3/0 N4/0 N5/0 N6/0 N7/0 N8/0 N9/0 fixedR/0 formatErr/0 nonceErr/0 ok/0
+   private dinitx/1 dsid/1 initx/2 rinitx/1 session/2 sfst/1 sid/1 sk/1 ssnd/1
+  
+Algebra:
+  sfst(session(x,y))->x
+  ssnd(session(x,y))->y
+  dsid(sid(id))->id
+  dinitx(initx(x,r))->x
+  rinitx(initx(x,r))->r
+
+Transaction init:
+*X1 in {t1, t2}.
+new X0.
+send sid(X0).
+send initx(X1, X0). nil
+
+Transaction r:
+receive X0.
+receive X2.
+receive X5.
+receive X6.
+<>B0 in {N0, N1}.
+try X1:=dsid(X0) in
+  try X3:=dinitx(X2) in
+    try X4:=rinitx(X2) in
+      if X1 = X4 then
+        try X7:=sfst(X6) in
+          try X8:=ssnd(X6) in
+            if X1 = X7 then
+              if X5 = X8 then
+                if B0 = N0 then
+                  new X9, X10.
+                  send scrypt(sk(X3), pair(X9, X5), fixedR). nil
+                else
+                  new X9, X10.
+                  send scrypt(sk(X3), pair(X9, X10), fixedR). nil
+              else
+                nil
+            else
+              nil
+          catch nil
+        catch nil
+      else
+        nil
+    catch nil
+  catch nil
+catch nil
+
+Transaction x1:
+receive X0.
+receive X2.
+try X1:=dsid(X0) in
+  try X3:=dinitx(X2) in
+    try X4:=rinitx(X2) in
+      if X1 = X4 then
+        new X5.
+        send X5.
+        send session(X1, X5). nil
+      else
+        nil
+    catch nil
+  catch nil
+catch nil
+
+Transaction x2:
+receive X0.
+receive X2.
+receive X5.
+receive X8.
+try X1:=dsid(X0) in
+  try X3:=dinitx(X2) in
+    try X4:=rinitx(X2) in
+      if X1 = X4 then
+        try X6:=sfst(X5) in
+          try X7:=ssnd(X5) in
+            if X1 = X6 then
+              try X9:=dscrypt(sk(X3), X8) in
+                try X10:=proj1(X9) in
+                  try X11:=proj2(X9) in
+                    if X11 = X7 then
+                      send ok. nil
+                    else
+                      send nonceErr. nil
+                  catch send formatErr. nil
+                catch send formatErr. nil
+              catch send formatErr. nil
+            else
+              nil
+          catch nil
+        catch nil
+      else
+        nil
+    catch nil
+  catch nil
+catch nil
+
+Bound: 7

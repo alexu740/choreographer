@@ -1,0 +1,30 @@
+Sigma0:
+  public t1/0 t2/0
+
+Sigma:
+  public ok/0 nonceErr/0 formatErr/0 fixedR/0
+  private sk/1 session/2 sfst/1 ssnd/1
+
+Algebra:
+  sfst(session(x,y))->x
+  ssnd(session(x,y))->y
+
+Protocol:
+  {
+    *x in {t1, t2} : sk(x)
+    r : sk(x)
+  }
+
+  lock(x). new Nt. unlock.
+  x -> r: Nt. @[x := Nt]
+    lock(r). new Nr. new Nt'. unlock.
+    r -> x : {
+      scrypt(sk(x), pair(Nr, Nt), fixedR).
+        x -> r : ok. nil
+      +
+      scrypt(sk(x), pair(Nr, Nt'), fixedR).
+        x -> r : nonceErr. nil
+
+      otherwise.
+        x -> r : formatErr. nil
+    }

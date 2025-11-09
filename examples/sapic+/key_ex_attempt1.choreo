@@ -1,0 +1,17 @@
+Protocol:
+  {
+    A : A, B, s
+    B : A, B, s
+    s : A, B, s
+  }
+
+  A->s: pair(A, B).
+  lock(s). new KAB. unlock. s->A: KAB.
+                            A->B: pair(A, KAB). nil
+
+Goals:
+KAB secret between A, B, s
+A authenticates s on KAB
+A authenticates s on B
+B authenticates s on KAB
+B authenticates s on A
