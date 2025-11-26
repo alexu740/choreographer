@@ -52,31 +52,52 @@ getFrameKeyForTerm :: SFrame -> Term -> Maybe SVariable
 getFrameKeyForTerm frame term =
   fmap fst (List.find ((== term) . snd) (Map.toList (mapping frame)))
 
+-- termIsComposableModuloTheory :: RewriteSystem -> SFrame -> Term -> Bool
+-- termIsComposableModuloTheory rs frame term = 
+--   case term of
+--   Atomic k -> 
+--     case getFrameKeyForTerm frame (Atomic k) of
+--       Just k -> True
+--       Nothing -> False
+--   (Composed constructor []) ->
+--     let allowedContructors = Set.toList $ Map.keysSet $ systemConstructors rs
+--         operationSymbols = map fst operations
+--     in constructor `elem` (allowedContructors ++ operationSymbols)
+--   composedTerm -> do
+--     let equivClass = findEquivalenceClass [] composedTerm
+--     any (composableTerm rs frame) equivClass
+--   where
+--     composableTerm :: RewriteSystem -> SFrame -> Term -> Bool
+--     composableTerm rs frame term@(Composed constructor args) =
+--       case getFrameKeyForTerm frame term of
+--         Just k -> True
+--         _ -> do
+--           let allowedContructors = Set.toList $ Map.keysSet $ systemConstructors rs
+--           let operationSymbols = map fst operations
+--           if constructor `elem` (allowedContructors ++ operationSymbols)
+--             then all (termIsComposableModuloTheory rs frame) args
+--             else False
+
 termIsComposableModuloTheory :: RewriteSystem -> SFrame -> Term -> Bool
-termIsComposableModuloTheory rs frame term = 
+termIsComposableModuloTheory rs frame term =
   case term of
-  Atomic k -> 
-    case getFrameKeyForTerm frame (Atomic k) of
-      Just k -> True
-      Nothing -> False
-  (Composed constructor []) ->
-    let allowedContructors = Set.toList $ Map.keysSet $ systemConstructors rs
-        operationSymbols = map fst operations
-    in constructor `elem` (allowedContructors ++ operationSymbols)
+  Atomic k -> composableTerm rs frame (Atomic k)
   composedTerm -> do
     let equivClass = findEquivalenceClass [] composedTerm
     any (composableTerm rs frame) equivClass
   where
     composableTerm :: RewriteSystem -> SFrame -> Term -> Bool
+    composableTerm rs frame term@(Atomic k) =
+      case getFrameKeyForTerm frame (Atomic k) of
+        Just k -> True
+        Nothing -> False
     composableTerm rs frame term@(Composed constructor args) =
       case getFrameKeyForTerm frame term of
         Just k -> True
         _ -> do
           let allowedContructors = Set.toList $ Map.keysSet $ systemConstructors rs
           let operationSymbols = map fst operations
-          if constructor `elem` (allowedContructors ++ operationSymbols)
-            then all (termIsComposableModuloTheory rs frame) args
-            else False
+          (constructor `elem` (allowedContructors ++ operationSymbols)) && all (composableTerm rs frame) args
 
 findEquivalenceClass :: [Term] -> Term -> [Term]
 findEquivalenceClass alreadyFound term =
@@ -101,7 +122,7 @@ findEquivalenceClass alreadyFound term =
       | f `elem` map fst operations =
           let receipts = catMaybes [ matchWithEquation eq t | eq <- equationalTheory ]
           in  [ equivalentTerm r | r <- receipts ]
-      | otherwise = []
+      | otherwise = [t]
     oneStepEquivs _ = []
 
     nestedEquivs :: [Term] -> Term -> [Term]

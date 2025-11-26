@@ -165,9 +165,7 @@ shorten t s = (diffOnce t s, diffOnce s t)
   where 
     diffOnce :: Eq a => [a] -> [a] -> [a]
     diffOnce = foldl (flip List.delete)
-
-    diffOnceBy :: (a -> a -> Bool) -> [a] -> [a] -> [a]
-    diffOnceBy eq = foldl (flip (List.deleteBy eq))
+    
 ---------------------------------
 analysisPhase2Exp1 :: ProtocolDescription -> SFrame -> [SVariable] -> [Check]
 analysisPhase2Exp1 description frame frameKeys = do
