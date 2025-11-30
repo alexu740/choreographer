@@ -35,6 +35,7 @@ recipeToTerm (RFunction f args) = TFunction f (map recipeToTerm args)
 
 recipeToNameTerm :: (SFrame, SRecipe) -> STerm
 recipeToNameTerm (frame, RVariable var) = choreoTermToSTerm $ mapping frame Map.! var
+recipeToNameTerm (frame, RFunction f []) = TFunction f []
 recipeToNameTerm (frame, RFunction f args) = TFunction f (map (recipeToNameTerm . h frame) args) -- was recipeToTerm before
 
 choreoTermToSTerm :: Term -> STerm

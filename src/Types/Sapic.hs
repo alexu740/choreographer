@@ -65,6 +65,7 @@ data SFactType
   | Witness 
   | Request 
   | Honest
+  | Dishonest
   deriving (Eq, Show)
 
 type SFactConstant = T.Text
@@ -114,6 +115,7 @@ data LFact
   | PRequest
   | PIntruderKnows
   | PHonest
+  | PDishonest
   deriving (Eq, Ord, Show)
 
 type Time = Symbol
@@ -149,6 +151,7 @@ data ProverifQuery = ProverifQuery {
 
 data ProverifFormula
   = PVEvent LFact [Symbol]
+  | PVOr ProverifFormula ProverifFormula
   | PVInjEvent LFact [Symbol]
   | PVAnd ProverifFormula ProverifFormula
   | PVImpl ProverifFormula ProverifFormula

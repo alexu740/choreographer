@@ -8,6 +8,7 @@ import Types.Signatures (SapicTranslatorFunction)
 import Compiler.ToSapicPlus.RecipeUtility (constructCommmonRecipe, recipeToTerm)
 import Types.Simple ( Cell, FUNCTIONS(CELL))
 import Types.ChoreographyProtocolShell (ProtocolDescription)
+import Compiler.ToSapicPlus.SyntacticSimplifier (recipeWithNameReplacement, variableWithNameReplacement)
 
 translateAtomic :: SapicTranslatorFunction -> ProtocolDescription -> Agent -> [(SFrame, Atomic)] -> Either SapicTranslationError SProcess
 translateAtomic _ _ _ [] = Left "UndefinedError"
@@ -31,14 +32,15 @@ translateAtomic mainTranslateFunction description agent pairs@((state, atom) : _
       let (fts, fas') = unzip [((f, t), (f, a)) | (f, t, a, _) <- ftas]
       recipe <- constructCommmonRecipe description fts
       translatedFas <- translateAtomic mainTranslateFunction description agent fas'
-      return (SLookup (recipeToTerm recipe) newVar translatedFas SNil)
+      v <- variableWithNameReplacement newVar fts
+      return (SLookup (recipeWithNameReplacement recipe fts) v translatedFas SNil)
     Write cell _ _ _ -> do
       fttas <- extractWrite cell pairs
       let (ft1s, ft2s, fas') = unzip3 [((f, t1), (f, t2), (f, a)) | (f, t1, t2, a) <- fttas]
       recipe1 <- constructCommmonRecipe description ft1s
       recipe2 <- constructCommmonRecipe description ft2s
       translatedFas <- translateAtomic mainTranslateFunction description agent fas'
-      return (SInsert (recipeToTerm recipe1) (recipeToTerm recipe2) translatedFas)
+      return (SInsert (recipeWithNameReplacement recipe1 ft1s) (recipeWithNameReplacement recipe2 ft2s) translatedFas)
     If {} -> do
       if all (isConditionStep . snd) pairs
         then do
@@ -46,7 +48,8 @@ translateAtomic mainTranslateFunction description agent pairs@((state, atom) : _
           recipe2 <- constructCommmonRecipe description (map (getIfTerms "AllRightTermsWithRespectiveFrames") pairs)
           fa1s' <- translateAtomic mainTranslateFunction description agent (map (getIfNextPairs "AllLeftNextPairs") pairs)
           fa2s' <- translateAtomic mainTranslateFunction description agent (map (getIfNextPairs "AllRightNextPairs") pairs)
-          return (SIf (recipeToTerm recipe1) (recipeToTerm recipe2) fa1s' fa2s')
+          return (SIf (recipeWithNameReplacement recipe1 (map (getIfTerms "AllLeftTermsWithRespectiveFrames") pairs)) 
+                      (recipeWithNameReplacement recipe2 (map (getIfTerms "AllRightTermsWithRespectiveFrames") pairs)) fa1s' fa2s')
         else Left "DifferentTypes if"
     Unlock _ -> do 
       if all (isUnlockStep . snd) pairs

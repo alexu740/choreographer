@@ -4,7 +4,7 @@ module Compiler.ToSapicPlus.PrettyPrinter where
 import Types.Choreography
 import Types.Sapic
 import Types.Simple
-
+import Syntax.Util(toText)
 import Data.Char (toLower)
 import qualified Data.Text as T
 import qualified Data.Set as Set
@@ -132,9 +132,6 @@ prettyProcLines ind p = case p of
       [(t, cont)] ->
         line ind ("out(" <> ppTerm t <> ");")
         ++ prettyProcLines ind cont
-      _ ->
-        line ind "out { /* multiple branches not yet rendered */ }"
-
 
   SLet pat scr pThen pElse ->
     blockWith ind ("let " <> ppPattern pat <> " = " <> ppTerm scr <> " in") $ \ind' ->
@@ -152,7 +149,7 @@ prettyProcLines ind p = case p of
                    prettyProcLines ind' pElse
 
   SChoice t1 t2 pThen pElse ->
-    blockWith ind ("if " <> ppTerm t1 <> " = " <> T.unpack t2 <> " then") $ \ind' ->
+    blockWith ind ("if " <> ppTerm t1 <> " = '" <> T.unpack t2 <> "' then") $ \ind' ->
       prettyProcLines ind' pThen
     ++ case pElse of
          SNil -> []
@@ -177,12 +174,27 @@ prettyProcLines ind p = case p of
   SParallel ps ->
     let rendered = map (prettyProcLines (ind+1)) ps
         sepLine  = line ind " | "
-    in  line ind "("
+    in line ind "("
         ++ intercalateLines sepLine rendered
         ++ line ind ")"
 
   SAgentInitialisation s terms ->
     line ind (T.unpack s <> "(" <> intercalate ", " (map ppTerm terms) <> ")")
+  
+  SInsert key value next ->
+    let keyStr = ppTerm key
+        valStr = ppTerm value
+        thisLine = indent ind <> "insert " <> keyStr <> ", " <> valStr <> ";"
+    in thisLine : prettyProcLines ind next
+
+  SLookup key var pThen pElse ->
+    let pad = replicate ind ' '
+        keyStr = ppTerm key
+        line1 = indent ind <> "lookup " <> keyStr <> " as " <> T.unpack var <> " in"
+        thenLines = prettyProcLines (ind + 1) pThen
+        lineElse = indent ind <> "else"
+        elseLines = prettyProcLines (ind + 1) pElse
+    in line1 : thenLines ++ [lineElse] ++ elseLines
 
 -- helpers
 ppFactArguments :: SFactArgument -> String
@@ -194,8 +206,8 @@ ppTerm :: STerm -> String
 ppTerm trm = case trm of
   TName n -> ppName n
   TVariable v -> ppVar v
-  TFunction (UnDef f) [] -> T.unpack f
-  TFunction f [] -> ppFun f
+  TFunction (UnDef f) [] -> T.unpack f <> "()"
+  TFunction f [] -> ppFun f <> "()"
   TFunction (UnDef f) ts -> T.unpack f <> "(" <> commaSep (map ppTerm ts) <> ")"
   TFunction f ts -> ppFun f <> "(" <> commaSep (map ppTerm ts) <> ")"
 
@@ -220,7 +232,7 @@ ppVar :: SVariable -> String
 ppVar = T.unpack
 
 ppFun :: Function -> String
-ppFun = map toLower . show
+ppFun = T.unpack . toText
 
 commaSep :: [String] -> String
 commaSep [] = ""
@@ -263,7 +275,9 @@ ppLemma (Lemma nm out ex body) =
   <> "\""
   where
     ppF x = case x of
-      FFact p xs t -> ppPred p <> "(" <> intercalate ", " (map T.unpack xs) <> ") @ " <> ppSym t
+      FFact p xs t -> 
+        let xs' = quoteGoalIdIfNeeded p xs
+        in ppPred p <> "(" <> intercalate ", " (map T.unpack xs') <> ") @ " <> ppSym t
       FNot f -> "not(" <> ppF f <> ")"
       FAnd a b -> "(" <> ppF a <> " & "  <> ppF b <> ")"
       FOr a b -> "(" <> ppF a <> " | "  <> ppF b <> ")"
@@ -271,6 +285,16 @@ ppLemma (Lemma nm out ex body) =
       FForall vs f -> "All " <> unwords (map T.unpack vs) <> ". " <> ppF f
       FExists vs f -> "Ex "  <> unwords (map T.unpack vs) <> ". " <> ppF f
       FEq x y -> T.unpack x <> " = " <> T.unpack y
+    
+    quoteGoalIdIfNeeded :: LFact -> [Symbol] -> [Symbol]
+    quoteGoalIdIfNeeded PRequest (a2:a1:gid:rest) =
+      a2 : a1 : quote gid : rest
+    quoteGoalIdIfNeeded PWitness (a1:a2:gid:rest) =
+      a1 : a2 : quote gid : rest
+    quoteGoalIdIfNeeded _ xs = xs
+
+    quote :: T.Text -> T.Text
+    quote s = T.concat ["'", s, "'"]
 
     ppPred c = case c of
       PSecret -> "Secret"
@@ -315,6 +339,7 @@ ppPV frm = case frm of
   PVEvent f xs -> "event(" <> ppPVAtom f xs <> ")"
   PVInjEvent f xs -> "inj-event(" <> ppPVAtom f xs <> ")"
   PVAnd a b -> "(" <> ppPV a <> " && " <> ppPV b <> ")"
+  PVOr a b -> "(" <> ppPV a <> " || " <> ppPV b <> ")"
   PVImpl a b -> "(" <> ppPV a <> " ==> " <> ppPV b <> ")"
 
 ppPVAtom :: LFact -> [Symbol] -> String
@@ -326,6 +351,7 @@ ppPVAtom fact xs =
 pvPred :: LFact -> String
 pvPred fact = case fact of
   PHonest -> "eHonest"
+  PDishonest -> "eDishonest"
   PRequest -> "eRequest"
   PWitness -> "eWitness"
   PSecret -> "eSecret"

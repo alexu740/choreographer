@@ -86,7 +86,7 @@ constructRecipesAndNextPairs description (frames, branchTerms, nextChoreographie
   in case recipesOrError of
     Left m -> Left m
     Right recipes -> 
-      let recipeWithFrameList =  combine frames recipes
+      let recipeWithFrameList = combine frames recipes
       in Right (recipeWithFrameList, nextfcs)
 
 combine :: [a] -> [b] -> [(a,b)]

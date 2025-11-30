@@ -1,0 +1,153 @@
+theory ChoreoTheory
+begin
+builtins: hashing, asymmetric-encryption, revealing-signing, symmetric-encryption
+functions: pair/2, hash/1, boot/0 [private], booted/0 [private], create/0 [private], created/0 [private], decrypt/0 [private], envelope/0 [private], extend/0 [private], extended/0 [private], obt/0 [private], pcr/0 [private], quote/0 [private], quoted/0 [private], ref/0 [private], session_tpm/0 [private], true/0 [private], cell/2, priv/1 [private]
+let Alice(Alice) =
+  in(Parent);
+  in(TPM);
+  out(boot());
+  in(X5);
+  if X5 = booted() then
+    new n;
+    new esk;
+    out(pair(pair(session_tpm(), pk(priv(TPM))), aenc(esk, pk(priv(TPM)))));
+    in(sid);
+    out(senc(pair(pair(extend(), n), sid), esk));
+    in(X9);
+    if X9 = extended() then
+      out(pair(create(), hash(pair(obt(), pcr()))));
+      in(X10);
+      let X11 = getMessage(X10) in
+        let pair(X12, X13) = X11 in
+          let pair(X14, k) = X12 in
+            if revealVerify(X10, X11, pk(priv(TPM))) = true() then
+              if X13 = hash(pair(obt(), pcr())) then
+                if X14 = created() then
+                  new v;
+                  out(pair(envelope(), senc(v, k)));
+                  0
+let Parent(Parent) =
+  in(Alice);
+  in(TPM);
+  in(X5);
+  let pair(X6, X7) = X5 in
+    if X6 = envelope() then
+      new esk2;
+      out(pair(session_tpm(), aenc(esk2, pk(priv(TPM)))));
+      in(sid2);
+      in(choice);
+      if choice = '0' then
+        out(senc(pair(pair(extend(), ref()), sid2), esk2));
+        in(X101);
+        if X101 = extended() then
+          out(pair(quote(), senc(v, k)));
+          in(X11);
+          let X12 = getMessage(X11) in
+            let pair(X13, X14) = X12 in
+              let pair(X15, X16) = X13 in
+                if revealVerify(X11, X12, pk(priv(TPM))) = true() then
+                  if X14 = X7 then
+                    if X15 = quoted() then
+                      if X16 = pcr() then
+                        0
+      else
+        if choice = '1' then
+          out(senc(pair(pair(extend(), obt()), sid2), esk2));
+          in(X102);
+          if X102 = extended() then
+            out(pair(decrypt(), senc(v, k)));
+            in(v);
+            0
+let TPM(TPM) =
+  in(Alice);
+  in(Parent);
+  in(X4);
+  if X4 = boot() then
+    new init;
+    insert cell(TPM, pcr()), init;
+    out(booted());
+    in(X6);
+    let pair(X7, X8) = X6 in
+      let pair(X9, X10) = X7 in
+        let esk = adec(X8, priv(TPM)) in
+          if X10 = pk(priv(TPM)) then
+            if X9 = session_tpm() then
+              new sid;
+              out(sid);
+              in(X13);
+              let X14 = sdec(X13, esk) in
+                let pair(X15, X16) = X14 in
+                  let pair(X17, n) = X15 in
+                    if sid = X16 then
+                      if X17 = extend() then
+                        lookup cell(TPM, pcr()) as current in
+                          insert cell(TPM, pcr()), hash(pair(n, current));
+                          out(extended());
+                          in(X20);
+                          let pair(X21, X22) = X20 in
+                            if X21 = create() then
+                              if X22 = hash(pair(obt(), pcr())) then
+                                new k;
+                                out(revealSign(pair(pair(created(), k), hash(pair(obt(), pcr()))), priv(TPM)));
+                                in(X24);
+                                let pair(X25, X26) = X24 in
+                                  let esk2 = adec(X26, priv(TPM)) in
+                                    if X25 = X9 then
+                                      if X25 = session_tpm() then
+                                        new sid2;
+                                        out(sid2);
+                                        in(X29);
+                                
+                                              let X30 = sdec(X29, esk2) in
+                                                let pair(X31, X32) = X30 in
+                                                  let pair(X33, X34) = X31 in
+                                                    if X17 = X33 then
+                                                      if sid2 = X32 then
+                                                        if X34 = ref() then
+                                                          if X22 = hash(pair(X34, pcr())) then
+                                                            0
+                                                          else
+                                                            lookup cell(TPM, pcr()) as c2 in
+                                                            insert cell(TPM, pcr()), hash(pair(ref(), c2));
+                                                            out(extended());
+                                                            in(X36);
+                                                            let pair(X37, X38) = X36 in
+                                                                let v = sdec(X38, k) in
+                                                                if X37 = quote() then
+                                                                    out(revealSign(pair(pair(quoted(), pcr()), senc(v, k)), priv(TPM)));
+                                                                    0
+                                                            else
+                                                            0
+                                                        else
+                                                          if X22 = hash(pair(X34, pcr())) then
+                                                            if X34 = obt() then
+                                                              lookup cell(TPM, pcr()) as c2 in
+                                                                insert cell(TPM, pcr()), hash(pair(obt(), c2));
+                                                                out(extended());
+                                                                in(X36);
+                                                                let pair(X37, X38) = X36 in
+                                                                  let v = sdec(X38, k) in
+                                                                    if X37 = decrypt() then
+                                                                      out(v);
+                                                                      0
+                                                              else
+                                                                0
+                        else
+                          0
+process: 
+  new dishonest;
+  event Dishonest(dishonest);
+  out(dishonest);
+  out(priv(dishonest));
+  ! new agent;
+  event Honest(agent);
+  out(agent);
+  out(pk(priv(agent)));
+  ! (
+    Alice(agent)
+   | 
+    Parent(agent)
+   | 
+    TPM(agent)
+  )
+end

@@ -169,7 +169,7 @@ convertSecurityGoalsToLemms description =
     mkWeak (_t, a1, a2, gid) =
       let name = "weakAuth_" <> a1 <> "_" <> a2 <> "_" <> termId _t
           body =
-            FForall [a1, a2, gid, tVar, iVar, sidVar, timeVar] $
+            FForall [a1, a2, tVar, iVar, sidVar, timeVar] $
               (
                 FFact PHonest [a1] timeVar .&&. 
                 FFact PRequest [a2, a1, gid, tVar, sidVar] iVar
@@ -180,7 +180,7 @@ convertSecurityGoalsToLemms description =
     mkStr (tGoal, a1, a2, gid) =
         let name = "strongAuth_" <> a1 <> "_" <> a2 <> "_" <> termId tGoal
             body = 
-              FForall [a1, a2, gid, tVar, iVar, sidVar, timeVar]
+              FForall [a1, a2, tVar, iVar, sidVar, timeVar]
               (
                 (
                   FFact PHonest [a1] timeVar .&&.
@@ -236,18 +236,18 @@ convertSecurityGoalsToProverifQueries description =
   mkSec (t, as) =
     let xVar = "x" :: Symbol
         args = (xVar, "bitstring") : [(a, "bitstring") | a <- as]
-        honestConj :: ProverifFormula
-        honestConj =
+        dishonestDisj :: ProverifFormula
+        dishonestDisj =
           case as of
             a:rs -> foldl
-                      PVAnd
-                      (PVEvent PHonest [a])
-                      [ PVEvent PHonest [b] | b <- rs ]
-        rhs :: ProverifFormula
-        rhs = PVEvent PIntruderKnows [xVar]
+                      PVOr
+                      (PVEvent PDishonest [a])
+                      [ PVEvent PDishonest [b] | b <- rs ]
+        lhs :: ProverifFormula
+        lhs = PVAnd (PVEvent PSecret (xVar : as)) (PVEvent PIntruderKnows [xVar])
 
         body :: ProverifFormula
-        body = PVAnd honestConj rhs
+        body = PVImpl lhs dishonestDisj
     in ProverifQuery { arguments = args, query = body }
 
   mkStr :: (Term, Agent, Agent, T.Text) -> ProverifQuery
@@ -258,7 +258,6 @@ convertSecurityGoalsToProverifQueries description =
         args :: [(T.Text, T.Text)]
         args =
           [ (a1 , "bitstring") 
-          , (gid, "bitstring")
           , (a2 , "bitstring")
           , (sid, "bitstring")
           , (t  , "bitstring")
@@ -268,11 +267,11 @@ convertSecurityGoalsToProverifQueries description =
         leftSide =
             PVAnd
               (PVEvent PHonest [a1])
-              (PVInjEvent PRequest [a2, a1, gid, t, sid])
+              (PVInjEvent PRequest [a2, a1, "s" <> gid, t, sid])
 
         rightSide :: ProverifFormula
         rightSide =
-            PVInjEvent PWitness [a1, a2, gid, t]
+            PVInjEvent PWitness [a1, a2, "s" <> gid, t]
 
         body :: ProverifFormula
         body = PVImpl leftSide rightSide

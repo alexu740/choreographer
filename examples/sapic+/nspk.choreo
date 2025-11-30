@@ -1,4 +1,3 @@
-
 Protocol:
   {
     A : A, B, priv(A), pk(priv(B))
@@ -12,5 +11,5 @@ Protocol:
 
 Goals:
 pair(Na, Nb) secret between A, B
-B weakly authenticates A on Na
-A authenticates B on Nb 
+B weakly authenticates A on pair(Na,Nb)
+B authenticates A on pair(Na,Nb)

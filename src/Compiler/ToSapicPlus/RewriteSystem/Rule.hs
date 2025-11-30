@@ -18,7 +18,7 @@ specialConstructors = Map.fromList [(PRIV, 1), (SK, 2)]
 constructorsStd :: SConstructors
 constructorsStd = Map.fromList [
   -- Sapic specific
-  (H, 1), (AENC, 2), (SENC, 2), (SIGN, 2), (REVEALSIGN, 2), (CELL, 2), (PK, 1), (PAIR, 2), (UnDef "true", 0), (G, 0)
+  (HASH, 1), (H, 1), (AENC, 2), (SENC, 2), (SIGN, 2), (REVEALSIGN, 2), (CELL, 2), (PK, 1), (PAIR, 2), (UnDef "true", 0), (G, 0)
   
   -- Original
   ]

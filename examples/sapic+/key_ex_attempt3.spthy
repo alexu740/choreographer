@@ -1,4 +1,4 @@
-theory NSPK
+theory ChoreoTheory
 begin
 builtins: symmetric-encryption
 functions: pair/2, true/0 [private], sk/2 [private]
@@ -12,6 +12,8 @@ let A(A) =
       let pair(=B, KAB) = X7 in
         out(senc(pair(A, KAB), sk(B, s)));
         new sid;
+        event Request(A, s, 'WeakAuthAsAtomicKAB', KAB, sid);
+        event Request(A, s, 'WeakAuthAsAtomicB', B, sid);
         event Request(A, s, 'StrongAuthAsAtomicKAB', KAB, sid);
         event Request(A, s, 'StrongAuthAsAtomicB', B, sid);
         event Secret(KAB, A, B, s);
@@ -23,6 +25,8 @@ let B(B) =
   let X5 = sdec(X4, sk(B, s)) in
     let pair(=A, KAB) = X5 in
       new sid;
+      event Request(B, s, 'WeakAuthBsAtomicKAB', KAB, sid);
+      event Request(B, s, 'WeakAuthBsAtomicA', A, sid);
       event Request(B, s, 'StrongAuthBsAtomicKAB', KAB, sid);
       event Request(B, s, 'StrongAuthBsAtomicA', A, sid);
       event Secret(KAB, A, B, s);
@@ -30,13 +34,21 @@ let B(B) =
 let s(s) =
   in(A);
   in(B);
+  event Witness(s, A, 'WeakAuthAsAtomicB', B);
+  event Witness(s, B, 'WeakAuthBsAtomicA', A);
   event Witness(s, A, 'StrongAuthAsAtomicB', B);
   event Witness(s, B, 'StrongAuthBsAtomicA', A);
   in(X5);
   let pair(=A, =B) = X5 in
+    event Witness(s, A, 'WeakAuthAsAtomicB', B);
+    event Witness(s, B, 'WeakAuthBsAtomicA', A);
     event Witness(s, A, 'StrongAuthAsAtomicB', B);
     event Witness(s, B, 'StrongAuthBsAtomicA', A);
     new KAB;
+    event Witness(s, A, 'WeakAuthAsAtomicKAB', KAB);
+    event Witness(s, A, 'WeakAuthAsAtomicB', B);
+    event Witness(s, B, 'WeakAuthBsAtomicKAB', KAB);
+    event Witness(s, B, 'WeakAuthBsAtomicA', A);
     event Witness(s, A, 'StrongAuthAsAtomicKAB', KAB);
     event Witness(s, A, 'StrongAuthAsAtomicB', B);
     event Witness(s, B, 'StrongAuthBsAtomicKAB', KAB);
@@ -47,11 +59,9 @@ let s(s) =
 process: 
   new dishonest;
   out(dishonest);
-  out(priv(dishonest));
   ! new agent;
   event Honest(agent);
   out(agent);
-  out(pk(priv(dishonest)));
   ! (
     A(agent)
    | 
@@ -59,14 +69,30 @@ process:
    | 
     s(agent)
   )
-lemma secrecy_A_B_s_KAB :
+lemma secrecy_A_B_s_KAB [output=[spthy]] :
   "All A B s x #i #agA #agB #ags. ((Honest(A) @ agA & (Honest(B) @ agB & (Honest(s) @ ags & Secret(x, A, B, s) @ i))) ==> not(Ex #j. KU(x) @ j))"
-lemma strongAuth_A_s_KAB :
+lemma weakAuth_A_s_KAB [output=[spthy, proverif]] :
+  "All A s WeakAuthAsAtomicKAB t #i sid #ag. ((Honest(A) @ ag & Request(s, A, WeakAuthAsAtomicKAB, t, sid) @ i) ==> Ex #j. Witness(A, s, WeakAuthAsAtomicKAB, t) @ j)"
+lemma weakAuth_A_s_B [output=[spthy, proverif]] :
+  "All A s WeakAuthAsAtomicB t #i sid #ag. ((Honest(A) @ ag & Request(s, A, WeakAuthAsAtomicB, t, sid) @ i) ==> Ex #j. Witness(A, s, WeakAuthAsAtomicB, t) @ j)"
+lemma weakAuth_B_s_KAB [output=[spthy, proverif]] :
+  "All B s WeakAuthBsAtomicKAB t #i sid #ag. ((Honest(B) @ ag & Request(s, B, WeakAuthBsAtomicKAB, t, sid) @ i) ==> Ex #j. Witness(B, s, WeakAuthBsAtomicKAB, t) @ j)"
+lemma weakAuth_B_s_A [output=[spthy, proverif]] :
+  "All B s WeakAuthBsAtomicA t #i sid #ag. ((Honest(B) @ ag & Request(s, B, WeakAuthBsAtomicA, t, sid) @ i) ==> Ex #j. Witness(B, s, WeakAuthBsAtomicA, t) @ j)"
+lemma strongAuth_A_s_KAB [output=[spthy]] :
   "All A s StrongAuthAsAtomicKAB t #i sid #ag. ((Honest(A) @ ag & Request(s, A, StrongAuthAsAtomicKAB, t, sid) @ i) ==> Ex #j. (Witness(A, s, StrongAuthAsAtomicKAB, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(s, A, StrongAuthAsAtomicKAB, t, sid1) @ i1 & Request(s, A, StrongAuthAsAtomicKAB, t, sid2) @ i2) & not(sid1 = sid2)))))"
-lemma strongAuth_A_s_B :
+lemma strongAuth_A_s_B [output=[spthy]] :
   "All A s StrongAuthAsAtomicB t #i sid #ag. ((Honest(A) @ ag & Request(s, A, StrongAuthAsAtomicB, t, sid) @ i) ==> Ex #j. (Witness(A, s, StrongAuthAsAtomicB, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(s, A, StrongAuthAsAtomicB, t, sid1) @ i1 & Request(s, A, StrongAuthAsAtomicB, t, sid2) @ i2) & not(sid1 = sid2)))))"
-lemma strongAuth_B_s_KAB :
+lemma strongAuth_B_s_KAB [output=[spthy]] :
   "All B s StrongAuthBsAtomicKAB t #i sid #ag. ((Honest(B) @ ag & Request(s, B, StrongAuthBsAtomicKAB, t, sid) @ i) ==> Ex #j. (Witness(B, s, StrongAuthBsAtomicKAB, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(s, B, StrongAuthBsAtomicKAB, t, sid1) @ i1 & Request(s, B, StrongAuthBsAtomicKAB, t, sid2) @ i2) & not(sid1 = sid2)))))"
-lemma strongAuth_B_s_A :
+lemma strongAuth_B_s_A [output=[spthy]] :
   "All B s StrongAuthBsAtomicA t #i sid #ag. ((Honest(B) @ ag & Request(s, B, StrongAuthBsAtomicA, t, sid) @ i) ==> Ex #j. (Witness(B, s, StrongAuthBsAtomicA, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(s, B, StrongAuthBsAtomicA, t, sid1) @ i1 & Request(s, B, StrongAuthBsAtomicA, t, sid2) @ i2) & not(sid1 = sid2)))))"
+export queries :
+ "
+ query x:bitstring, A:bitstring, B:bitstring, s:bitstring; (((event(eHonest(A)) && event(eHonest(B))) && event(eHonest(s))) && event(attacker(x))).
+ query A:bitstring, StrongAuthAsAtomicKAB:bitstring, s:bitstring, sid:bitstring, t:bitstring; ((event(eHonest(A)) && inj-event(eRequest(s, A, StrongAuthAsAtomicKAB, t, sid))) ==> inj-event(eWitness(A, s, StrongAuthAsAtomicKAB, t))).
+ query A:bitstring, StrongAuthAsAtomicB:bitstring, s:bitstring, sid:bitstring, t:bitstring; ((event(eHonest(A)) && inj-event(eRequest(s, A, StrongAuthAsAtomicB, t, sid))) ==> inj-event(eWitness(A, s, StrongAuthAsAtomicB, t))).
+ query B:bitstring, StrongAuthBsAtomicKAB:bitstring, s:bitstring, sid:bitstring, t:bitstring; ((event(eHonest(B)) && inj-event(eRequest(s, B, StrongAuthBsAtomicKAB, t, sid))) ==> inj-event(eWitness(B, s, StrongAuthBsAtomicKAB, t))).
+ query B:bitstring, StrongAuthBsAtomicA:bitstring, s:bitstring, sid:bitstring, t:bitstring; ((event(eHonest(B)) && inj-event(eRequest(s, B, StrongAuthBsAtomicA, t, sid))) ==> inj-event(eWitness(B, s, StrongAuthBsAtomicA, t))).
+ "
 end

@@ -30,7 +30,8 @@ import Compiler.ToSapicPlus.TranslationCases.Receive (translateReceive)
 
 translateProtocol :: ProtocolDescription -> Either SapicTranslationError SProtocol
 translateProtocol description = do
-  let allAgents = Set.toList (Map.keysSet (protocolRoles description))
+  let d = pTraceShowId description
+  let allAgents = Set.toList (Map.keysSet (protocolRoles d))
   protocolHeader <- translateProcolHeader description
   agentProcesses <- traverse (translateAgent description) allAgents
   let mainProcess = translateMainProcess (builtins protocolHeader) description allAgents
@@ -97,45 +98,47 @@ translateMainProcess :: [BuiltinTheory] -> ProtocolDescription -> [Agent] -> SPr
 translateMainProcess builtins description agents =
   let usesAsymmetricEncr = AsymmetricEncryption `elem` builtins
   in SNew (TName "dishonest") (
-    SOut [(
-      TName "dishonest",
-      if usesAsymmetricEncr
-        then 
-          SOut [(
-            TFunction PRIV [TName "dishonest"],
+    SFact Dishonest [SFTerm $ TName "dishonest"] (
+      SOut [(
+        TName "dishonest",
+        if usesAsymmetricEncr
+          then 
+            SOut [(
+              TFunction PRIV [TName "dishonest"],
+              SReplication (
+                SNew (TName "agent")
+                (
+                  SFact Honest [SFTerm $ TName "agent"] (
+                    SOut [(
+                      TName "agent",
+                      SOut [(
+                        TFunction PK [ TFunction PRIV [TName "agent"]],
+                        SReplication (
+                          SParallel (map agentInitialisation agents)
+                        )
+                      )]
+                    )]
+                  )
+                )
+              )
+            )]
+            
+          else
             SReplication (
               SNew (TName "agent")
               (
                 SFact Honest [SFTerm $ TName "agent"] (
                   SOut [(
                     TName "agent",
-                    SOut [(
-                      TFunction PK [ TFunction PRIV [TName "agent"]],
-                      SReplication (
-                        SParallel (map agentInitialisation agents)
-                      )
-                    )]
+                    SReplication (
+                      SParallel (map agentInitialisation agents)
+                    )
                   )]
                 )
               )
             )
-          )]
-          
-        else
-          SReplication (
-            SNew (TName "agent")
-            (
-              SFact Honest [SFTerm $ TName "agent"] (
-                SOut [(
-                  TName "agent",
-                  SReplication (
-                    SParallel (map agentInitialisation agents)
-                  )
-                )]
-              )
-            )
-          )
-    )]
+      )]
+    )
   )
   where
     agentInitialisation :: Agent -> SProcess

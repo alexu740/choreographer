@@ -57,8 +57,8 @@ checkDefinedFunctions description = do
 
 ---- Find all unique function symbols used in choreography ----
 collectChoreo :: Choreography -> [T.Text]
-collectChoreo Nil                          = []
-collectChoreo (Lock _ a)                   = collectAtomic a
+collectChoreo Nil = []
+collectChoreo (Lock _ a) = collectAtomic a
 collectChoreo (Interaction _ _ pairs _def) =
   concatMap (\(t,c) -> collectTerm t ++ collectChoreo c) pairs
 
@@ -71,8 +71,8 @@ collectTerm (Composed f args) = funText f : concatMap collectTerm args
 
 collectAtomic :: Atomic -> [T.Text]
 collectAtomic (Nonce _ a) = collectAtomic a
-collectAtomic (Read _ _ t a) = collectTerm t ++ collectAtomic a
-collectAtomic (Write _ t1 t2 a) = collectTerm t1 ++ collectTerm t2 ++ collectAtomic a
+collectAtomic (Read _ _ t a) = collectTerm t ++ collectAtomic a ++ collectTerm (Composed CELL [t, t])
+collectAtomic (Write _ t1 t2 a) = collectTerm t1 ++ collectTerm t2 ++ collectAtomic a ++ collectTerm (Composed CELL [t1, t2])
 collectAtomic (If t1 t2 a1 a2) = collectTerm t1 ++ collectTerm t2 ++ collectAtomic a1 ++ collectAtomic a2
 collectAtomic (Choice _ _ _ a) = collectAtomic a
 collectAtomic (Release _ _ a) = collectAtomic a

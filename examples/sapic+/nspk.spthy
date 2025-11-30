@@ -1,18 +1,17 @@
-theory NSPK
+theory ChoreoTheory
 begin
 builtins: asymmetric-encryption
 functions: pair/2, true/0 [private], priv/1 [private]
 let A(A) =
   in(B);
   new Na;
-  event Witness(A, B, 'WeakAuthBAAtomicNa', Na);
   out(aenc(pair(A, Na), pk(priv(B))));
   in(X5);
   let X6 = adec(X5, priv(A)) in
     let pair(=Na, Nb) = X6 in
+      event Witness(A, B, 'WeakAuthBAPAIRAtomicNaAtomicNb', pair(Na, Nb));
+      event Witness(A, B, 'StrongAuthBAPAIRAtomicNaAtomicNb', pair(Na, Nb));
       out(aenc(Nb, pk(priv(B))));
-      new sid;
-      event Request(A, B, 'StrongAuthABAtomicNb', Nb, sid);
       event Secret(pair(Na, Nb), A, B);
       0
 let B(B) =
@@ -21,32 +20,38 @@ let B(B) =
   let X5 = adec(X4, priv(B)) in
     let pair(=A, Na) = X5 in
       new Nb;
-      event Witness(B, A, 'StrongAuthABAtomicNb', Nb);
       out(aenc(pair(Na, Nb), pk(priv(A))));
       in(X9);
       let X10 = adec(X9, priv(B)) in
         if X10 = Nb then
           new sid;
-          event Request(B, A, 'WeakAuthBAAtomicNa', Na, sid);
+          event Request(B, A, 'WeakAuthBAPAIRAtomicNaAtomicNb', pair(Na, Nb), sid);
+          event Request(B, A, 'StrongAuthBAPAIRAtomicNaAtomicNb', pair(Na, Nb), sid);
           event Secret(pair(Na, Nb), A, B);
           0
 process: 
   new dishonest;
+  event Dishonest(dishonest);
   out(dishonest);
   out(priv(dishonest));
   ! new agent;
   event Honest(agent);
   out(agent);
-  out(pk(priv(dishonest)));
+  out(pk(priv(agent)));
   ! (
     A(agent)
    | 
     B(agent)
   )
-lemma secrecy_A_B_PAIRNaNb :
+lemma secrecy_A_B_PAIRNaNb [output=[spthy]] :
   "All A B x #i #agA #agB. ((Honest(A) @ agA & (Honest(B) @ agB & Secret(x, A, B) @ i)) ==> not(Ex #j. KU(x) @ j))"
-lemma weakAuth_B_A_Na :
-  "All B A WeakAuthBAAtomicNa t #i sid #ag. ((Honest(B) @ ag & Request(A, B, WeakAuthBAAtomicNa, t, sid) @ i) ==> Ex #j. Witness(B, A, WeakAuthBAAtomicNa, t) @ j)"
-lemma strongAuth_A_B_Nb :
-  "All A B StrongAuthABAtomicNb t #i sid #ag. ((Honest(A) @ ag & Request(B, A, StrongAuthABAtomicNb, t, sid) @ i) ==> Ex #j. (Witness(A, B, StrongAuthABAtomicNb, t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(B, A, StrongAuthABAtomicNb, t, sid1) @ i1 & Request(B, A, StrongAuthABAtomicNb, t, sid2) @ i2) & not(sid1 = sid2)))))"
+lemma weakAuth_B_A_PAIRNaNb [output=[spthy, proverif]] :
+  "All B A t #i sid #ag. ((Honest(B) @ ag & Request(A, B, 'WeakAuthBAPAIRAtomicNaAtomicNb', t, sid) @ i) ==> Ex #j. Witness(B, A, 'WeakAuthBAPAIRAtomicNaAtomicNb', t) @ j)"
+lemma strongAuth_B_A_PAIRNaNb [output=[spthy]] :
+  "All B A t #i sid #ag. ((Honest(B) @ ag & Request(A, B, 'StrongAuthBAPAIRAtomicNaAtomicNb', t, sid) @ i) ==> Ex #j. (Witness(B, A, 'StrongAuthBAPAIRAtomicNaAtomicNb', t) @ j & not(Ex #i1 #i2 sid1 sid2. ((Request(A, B, 'StrongAuthBAPAIRAtomicNaAtomicNb', t, sid1) @ i1 & Request(A, B, 'StrongAuthBAPAIRAtomicNaAtomicNb', t, sid2) @ i2) & not(sid1 = sid2)))))"
+export queries :
+ "
+ query x:bitstring, A:bitstring, B:bitstring; ((event(eSecret(x, A, B)) && event(attacker(x))) ==> (event(eDishonest(A)) || event(eDishonest(B)))).
+ query B:bitstring, A:bitstring, sid:bitstring, t:bitstring; ((event(eHonest(B)) && inj-event(eRequest(A, B, sStrongAuthBAPAIRAtomicNaAtomicNb, t, sid))) ==> inj-event(eWitness(B, A, sStrongAuthBAPAIRAtomicNaAtomicNb, t))).
+ "
 end

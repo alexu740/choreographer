@@ -221,6 +221,7 @@ domain :: {Domain}
 
 term :: {Term}
     : function "(" termList ")" {CC.Composed $1 $3}
+    | function "(" ")" { CC.Composed $1 [] }
     | variable {CC.Atomic $1}
 
 termList :: {[Term]}

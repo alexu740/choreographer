@@ -22,6 +22,7 @@ import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Control.Applicative as List
+import Data.Text (toLower)
 
 toRR :: Term -> RR.RewriteTerm
 toRR (Atomic v) = RR.Atom v
@@ -135,6 +136,7 @@ fromText func =
     "pk" -> PK
     "aenc" -> AENC
     "senc" -> SENC
+    "revealSign" -> REVEALSIGN
     "sk" -> SK
     _ -> UnDef func
 
@@ -164,11 +166,15 @@ toText HASH = "hash"
 toText PK = "pk"
 toText AENC = "aenc"
 toText SENC = "senc"
+toText REVEALSIGN = "revealSign"
+toText REVEALVERIFY = "revealVerify"
+toText GETMESSAGE = "getMessage"
 toText PRIV = "priv"
 toText SK = "sk"
 
 -- sapic
 toText (UnDef func) = func
+toText f = toLower $ T.pack (show f)
 
 top :: T.Text
 top = "__TRUE__"

@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Compiler.ToSapicPlus.SyntacticSimplifier where
 
 import Types.Choreography(Term(..), Choreography)
@@ -9,8 +10,12 @@ import Types.Sapic
                SIf, SLet, SChoice, SFact),
       STerm(TVariable, TName),
       SVariable,
+      STerm(..),
       RTerm(..),
-      Rule(args, result) )
+      Rule(args, result),
+      SRecipe,
+      SapicTranslationError )
+import Compiler.ToSapicPlus.RecipeUtility (recipeToNameTerm, choreoTermToSTerm, h)
 
 import Types.Simple (Function)
 import Compiler.ToSapicPlus.SFrame(SFrame(..), toNameBasedSTerm, insertBoundedEntry)
@@ -183,12 +188,12 @@ squashOneIf = mapAccumLOr update
     -- Replace in pattern args: if we find PBind v where either a == TVariable v
     -- or b == TVariable v, switch that slot to PCompare.
     replaceArgs :: STerm -> STerm -> [SPatternArg] -> (Bool, [SPatternArg])
-    replaceArgs a b = go False
+    replaceArgs a@(TVariable _) b@(TVariable _) args = go False args
       where
         go changed [] = (changed, [])
         go changed (arg:rest) =
           case arg of
-            PBind v
+            PBind v@(TVariable _)
               | a == v ->
                   let (ch2, rest') = go True rest
                   in (True, PCompare b : rest')
@@ -201,6 +206,8 @@ squashOneIf = mapAccumLOr update
             PCompare _ ->
               let (ch2, rest') = go changed rest
               in (ch2, arg : rest')
+    replaceArgs _ _ args = (False, args)
+    
 
 ---
 receiveCaseSTermTranslation :: SFrame -> SVariable -> STerm
@@ -239,3 +246,20 @@ shouldNewVariableBeBounded frame var  =
           occuranceOfName = length (filter (== Atomic n) frameTerms)
       in  occuranceOfName == 1
     _ -> False
+
+
+recipeWithNameReplacement :: SRecipe -> [(SFrame, Term)] -> STerm
+recipeWithNameReplacement recipe ((frame, _): rest) =
+  recipeToNameTerm (frame, recipe)
+
+variableWithNameReplacement :: SVariable -> [(SFrame, Term)] -> Either SapicTranslationError SVariable
+variableWithNameReplacement term ((frame, _): rest) =
+  variableToNameTerm (frame, term)
+  
+variableToNameTerm :: (SFrame, SVariable) -> Either SapicTranslationError SVariable
+variableToNameTerm (frame, var) = do
+  let sterm = choreoTermToSTerm $ mapping frame Map.! var
+  case sterm of
+    TName n -> Right n
+    TVariable v -> Right v
+    TFunction _ _ -> Left "Not allowed to read a cell into a composed term!"
