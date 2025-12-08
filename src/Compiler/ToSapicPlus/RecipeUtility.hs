@@ -24,7 +24,7 @@ import qualified Data.Map as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as T
 
-import Compiler.ToSapicPlus.SFrame (SFrame(mapping), insertTermsInFrame, getLatestFrameKey)
+import Compiler.ToSapicPlus.SFrame (SFrame(mapping), insertTermsInFrame, getLatestFrameKey, toNameBasedSTerm)
 import Types.Sapic(SConstructors, SRecipe(..), SVariable, SapicTranslationError, STerm(..))
 import Compiler.ToSapicPlus.RewriteSystem.EquationalTheoryExtension (findEquivalenceClass, composeViaEquivalenceClassSet, operations)
 
@@ -34,7 +34,7 @@ recipeToTerm (RVariable var) = TVariable var
 recipeToTerm (RFunction f args) = TFunction f (map recipeToTerm args)
 
 recipeToNameTerm :: (SFrame, SRecipe) -> STerm
-recipeToNameTerm (frame, RVariable var) = choreoTermToSTerm $ mapping frame Map.! var
+recipeToNameTerm (frame, RVariable var) = toNameBasedSTerm frame (TVariable var) -- choreoTermToSTerm $ mapping frame Map.! var
 recipeToNameTerm (frame, RFunction f []) = TFunction f []
 recipeToNameTerm (frame, RFunction f args) = TFunction f (map (recipeToNameTerm . h frame) args) -- was recipeToTerm before
 
