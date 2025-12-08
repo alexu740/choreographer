@@ -48,7 +48,7 @@ analyzePhase1States :: ProtocolDescription -> [SFrame] -> ([SFrame], [RewriteRec
 analyzePhase1States description frames =
     let rewriteSystem = getRewriteSystem description
         (states', receipts) = unzip $ map (discoverNewTermsInFrame description rewriteSystem []) frames
-        receipts' = combineDestructors receipts
+        receipts' = pTraceShowId (combineDestructors receipts)
     in (states', receipts')
 
 combineDestructors :: [[RewriteReceipt]] -> [RewriteReceipt]
@@ -59,7 +59,7 @@ removeDuplicateRewriteReceipts = go Set.empty
   where
     -- dedupe on (frameKey, ruleFunction, subject)
     go _ [] = []
-    go seen (r@RewriteReceipt{ frameKey = k, ruleFunction = d, subject = s } : rs)
+    go seen (r@RewriteReceipt{ frameKey = k, ruleFunction = d, subjectRecipe = s } : rs)
       | Set.member (k, d, s) seen = go seen rs
       | otherwise = r : go (Set.insert (k, d, s) seen) rs
 -- 
