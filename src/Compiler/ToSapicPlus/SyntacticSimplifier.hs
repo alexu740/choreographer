@@ -188,12 +188,19 @@ squashOneIf = mapAccumLOr update
     -- Replace in pattern args: if we find PBind v where either a == TVariable v
     -- or b == TVariable v, switch that slot to PCompare.
     replaceArgs :: STerm -> STerm -> [SPatternArg] -> (Bool, [SPatternArg])
-    replaceArgs a@(TVariable _) b@(TVariable _) args = go False args
+    replaceArgs a b args 
+      | isVarOrName a && isVarOrName b = go False args
+      | otherwise = (False, args) 
       where
+        isVarOrName :: STerm -> Bool
+        isVarOrName (TVariable _) = True
+        isVarOrName (TName _) = True
+        isVarOrName _ = False
+
         go changed [] = (changed, [])
         go changed (arg:rest) =
           case arg of
-            PBind v@(TVariable _)
+            PBind v
               | a == v ->
                   let (ch2, rest') = go True rest
                   in (True, PCompare b : rest')
@@ -206,7 +213,6 @@ squashOneIf = mapAccumLOr update
             PCompare _ ->
               let (ch2, rest') = go changed rest
               in (ch2, arg : rest')
-    replaceArgs _ _ args = (False, args)
     
 
 ---
