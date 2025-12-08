@@ -1,0 +1,35 @@
+Functions:
+  private boot/0 booted/0 session_tpm/0 extend/0 extended/0 create/0 created/0 envelope/0 quote/0 quoted/0 decrypt/0 pcr/0 obt/0 ref/0
+
+Protocol:
+  {
+    Alice : Alice, Parent, TPM, priv(Alice), pk(priv(TPM))
+    Parent : Alice, Parent, TPM, priv(Parent), pk(priv(TPM))
+    TPM: Alice, Parent, TPM, priv(TPM), pk(priv(Alice))
+  }
+
+
+Alice->TPM: create().
+        lock(TPM).
+            new k.
+        unlock.
+        TPM->Alice: aenc(pair(created(), k), pk(priv(Alice))).
+            lock(Alice).
+                new v.
+            unlock.
+            Alice-> Parent: pair(envelope(), senc(v, k)).
+                    Parent->TPM: {
+                        aenc(pair(extend(), ref()), pk(priv(TPM))).
+                        TPM->Parent:extended().
+                            Parent->TPM: pair(quote(), senc(v, k)).
+                                    TPM->Parent: revealSign(pair(quoted(), senc(v, k)), priv(TPM)).
+                        nil
+                        +
+                        aenc(pair(extend(), obt()), pk(priv(TPM))).
+                        TPM->Parent:extended().
+                            Parent-> TPM: pair(decrypt(), senc(v, k)).
+                                     TPM->Parent: v. nil
+                    }
+
+
+

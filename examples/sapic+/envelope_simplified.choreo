@@ -49,24 +49,13 @@ Alice->TPM: boot().
                                                                unlock.
                                                                TPM->Parent: sid2.
                                                                     Parent->TPM: {
-                                                                      senc(pair(pair(extend(), ref()), sid2), esk2).
-                                                                      lock(TPM).
-                                                                        current3:=TPM[pcr()].
-                                                                        TPM[pcr()]:=hash(pair(ref(), current3)).
-                                                                      unlock.
-                                                                      TPM->Parent:extended().
-                                                                           Parent->TPM: pair(quote(), senc(v, k)).
-                                                                                   TPM->Parent: revealSign(pair(pair(quoted(), current3), senc(v, k)), priv(TPM)).
+                                                                      senc(pair(pair(senc(v, k), ref()), sid2), esk2).
+                                                                      TPM->Parent: senc(v, k).
                                                                       nil
                                                                       +
-                                                                      senc(pair(pair(extend(), obt()), sid2), esk2).
-                                                                      lock(TPM).
-                                                                        current4:=TPM[pcr()].
-                                                                        TPM[pcr()]:=hash(pair(obt(), current4)).
-                                                                      unlock.
-                                                                      TPM->Parent:extended().
-                                                                           Parent-> TPM: pair(decrypt(), senc(v, k)).
-                                                                                    TPM->Parent: v. nil
+                                                                      senc(pair(pair(senc(v, k), obt()), sid2), esk2).
+                                                                      TPM->Parent: v.
+                                                                      nil
                                                                     }
 
 
