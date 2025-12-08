@@ -30,8 +30,7 @@ import Compiler.ToSapicPlus.TranslationCases.Receive (translateReceive)
 
 translateProtocol :: ProtocolDescription -> Either SapicTranslationError SProtocol
 translateProtocol description = do
-  let d = pTraceShowId description
-  let allAgents = Set.toList (Map.keysSet (protocolRoles d))
+  let allAgents = Set.toList (Map.keysSet (protocolRoles description))
   protocolHeader <- translateProcolHeader description
   agentProcesses <- traverse (translateAgent description) allAgents
   let mainProcess = translateMainProcess (builtins protocolHeader) description allAgents
