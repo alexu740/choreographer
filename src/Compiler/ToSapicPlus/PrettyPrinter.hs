@@ -136,25 +136,29 @@ prettyProcLines ind p = case p of
   SLet pat scr pThen pElse ->
     blockWith ind ("let " <> ppPattern pat <> " = " <> ppTerm scr <> " in") $ \ind' ->
       prettyProcLines ind' pThen
-    ++ case pElse of
-         SNil -> []
-         _ -> blockWith ind "else" $ \ind' -> prettyProcLines ind' pElse
+    ++ blockWith ind "else" (\ind' ->
+          case pElse of
+            SNil -> [indent ind' <> "0"]
+            _ -> prettyProcLines ind' pElse
+      )
 
   SIf t1 t2 pThen pElse ->
     blockWith ind ("if " <> ppTerm t1 <> " = " <> ppTerm t2 <> " then") $ \ind' ->
       prettyProcLines ind' pThen
-    ++ case pElse of
-         SNil -> []
-         _ -> blockWith ind "else" $ \ind' ->
-                   prettyProcLines ind' pElse
+    ++ blockWith ind "else" (\ind' ->
+          case pElse of
+            SNil -> [indent ind' <> "0"]
+            _ -> prettyProcLines ind' pElse
+      )
 
-  SChoice t1 t2 pThen pElse ->
-    blockWith ind ("if " <> ppTerm t1 <> " = '" <> T.unpack t2 <> "' then") $ \ind' ->
+  SChoice t1 lbl pThen pElse ->
+    blockWith ind ("if " <> ppTerm t1 <> " = '" <> T.unpack lbl <> "' then") $ \ind' ->
       prettyProcLines ind' pThen
-    ++ case pElse of
-         SNil -> []
-         _ -> blockWith ind "else" $ \ind' ->
-                   prettyProcLines ind' pElse
+    ++ blockWith ind "else" (\ind' ->
+          case pElse of
+            SNil -> [indent ind' <> "0"]
+            _ -> prettyProcLines ind' pElse
+      )
 
   SReplication p ->
     prefixOpOnFirst ind "!" (prettyProcLines ind p)
