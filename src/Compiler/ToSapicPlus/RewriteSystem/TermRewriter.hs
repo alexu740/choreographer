@@ -48,7 +48,7 @@ analyzePhase1States :: ProtocolDescription -> [SFrame] -> ([SFrame], [RewriteRec
 analyzePhase1States description frames =
     let rewriteSystem = getRewriteSystem description
         (states', receipts) = unzip $ map (discoverNewTermsInFrame description rewriteSystem []) frames
-        receipts' = pTraceShowId (combineDestructors receipts)
+        receipts' = combineDestructors receipts
     in (states', receipts')
 
 combineDestructors :: [[RewriteReceipt]] -> [RewriteReceipt]

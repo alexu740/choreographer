@@ -1,6 +1,6 @@
 theory ChoreoTheory
 begin
-builtins: hashing, asymmetric-encryption, revealing-signing, symmetric-encryption
+builtins: hashing, asymmetric-encryption, symmetric-encryption
 functions: pair/2, hash/1, boot/0 [private], booted/0 [private], create/0 [private], created/0 [private], decrypt/0 [private], envelope/0 [private], extend/0 [private], extended/0 [private], obt/0 [private], pcr/0 [private], quote/0 [private], quoted/0 [private], ref/0 [private], session_tpm/0 [private], cell/2, priv/1 [private]
 let Alice(Alice) =
   in(Parent);
@@ -47,42 +47,17 @@ let Parent(Parent) =
       in(sid2);
       in(choice);
       if choice = '0' then
-        out(senc(pair(pair(extend(), ref()), sid2), esk2));
+        out(senc(pair(pair(X7, ref()), sid2), esk2));
         in(X10);
-        if X10 = extended() then
-          out(pair(quote(), X7));
-          in(X11);
-          let X12 = getMessage(X11) in
-            let pair(X13, X14) = X12 in
-              let pair(X15, current3) = X13 in
-                if revealVerify(X11, X12, pk(priv(TPM))) = true() then
-                  if X14 = X7 then
-                    if X15 = quoted() then
-                      0
-                    else
-                      0
-                  else
-                    0
-                else
-                  0
-              else
-                0
-            else
-              0
-          else
-            0
+        if X10 = X7 then
+          0
         else
           0
       else
         if choice = '1' then
-          out(senc(pair(pair(extend(), obt()), sid2), esk2));
-          in(X10);
-          if X10 = extended() then
-            out(pair(decrypt(), X7));
-            in(v);
-            0
-          else
-            0
+          out(senc(pair(pair(X7, obt()), sid2), esk2));
+          in(v);
+          0
         else
           0
     else
@@ -132,48 +107,18 @@ let TPM(TPM) =
                                         let X32 = sdec(X31, esk2) in
                                           let pair(X33, X34) = X32 in
                                             let pair(X35, X36) = X33 in
-                                              if X18 = X35 then
+                                              let v = sdec(X35, k) in
                                                 if sid2 = X34 then
                                                   if X36 = ref() then
                                                     if X23 = X36 then
                                                       0
                                                     else
-                                                      lookup cell(TPM, pcr()) as current3 in
-                                                        insert cell(TPM, pcr()), hash(pair(X36, X37));
-                                                        out(extended());
-                                                        in(X38);
-                                                        let pair(X39, X40) = X38 in
-                                                          let v = sdec(X40, k) in
-                                                            if X39 = quote() then
-                                                              out(revealSign(pair(pair(quoted(), X37), X40), priv(TPM)));
-                                                              0
-                                                            else
-                                                              0
-                                                          else
-                                                            0
-                                                        else
-                                                          0
-                                                      else
-                                                        0
+                                                      out(X35);
+                                                      0
                                                   else
                                                     if X23 = X36 then
-                                                      lookup cell(TPM, pcr()) as current4 in
-                                                        insert cell(TPM, pcr()), hash(pair(X23, X37));
-                                                        out(extended());
-                                                        in(X38);
-                                                        let pair(X39, X40) = X38 in
-                                                          let v = sdec(X40, k) in
-                                                            if X39 = decrypt() then
-                                                              out(v);
-                                                              0
-                                                            else
-                                                              0
-                                                          else
-                                                            0
-                                                        else
-                                                          0
-                                                      else
-                                                        0
+                                                      out(v);
+                                                      0
                                                     else
                                                       0
                                                 else

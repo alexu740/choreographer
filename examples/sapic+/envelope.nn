@@ -1,0 +1,1 @@
+Error: TranslationError (NoRecipe [(fromList [("X0",Atomic "Alice"),("X1",Atomic "Parent"),("X2",Atomic "TPM"),("X3",Composed PRIV [Atomic "Alice"]),("X4",Composed PK [Composed PRIV [Atomic "TPM"]]),("X5",Composed SID [Atomic "sessionID"]),("X6",Atomic "sessionID")],Composed (UnDef "boot") [])])

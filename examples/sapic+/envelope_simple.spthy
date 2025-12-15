@@ -1,0 +1,141 @@
+theory ChoreoTheory
+begin
+builtins: asymmetric-encryption, revealing-signing, symmetric-encryption
+functions: pair/2, boot/0 [private], booted/0 [private], create/0 [private], created/0 [private], decrypt/0 [private], envelope/0 [private], extend/0 [private], extended/0 [private], obt/0 [private], pcr/0 [private], quote/0 [private], quoted/0 [private], ref/0 [private], session_tpm/0 [private], priv/1 [private]
+let Alice(Alice) =
+  in(Parent);
+  in(TPM);
+  out(create());
+  in(X5);
+  let X6 = adec(X5, priv(Alice)) in
+    let pair(X7, k) = X6 in
+      if X7 = created() then
+        new v;
+        out(pair(envelope(), senc(v, k)));
+        0
+      else
+        0
+    else
+      0
+  else
+    0
+let Parent(Parent) =
+  in(Alice);
+  in(TPM);
+  in(X5);
+  let pair(X6, X7) = X5 in
+    if X6 = envelope() then
+      in(choice);
+      if choice = '0' then
+        out(aenc(pair(extend(), ref()), pk(priv(TPM))));
+        in(X8);
+        if X8 = extended() then
+          out(pair(quote(), X7));
+          in(X9);
+          let X10 = getMessage(X9) in
+            let pair(X11, X12) = X10 in
+              if revealVerify(X9, X10, pk(priv(TPM))) = true() then
+                if X11 = quoted() then
+                  if X12 = X7 then
+                    0
+                  else
+                    0
+                else
+                  0
+              else
+                0
+            else
+              0
+          else
+            0
+        else
+          0
+      else
+        if choice = '1' then
+          out(aenc(pair(extend(), obt()), pk(priv(TPM))));
+          in(X8);
+          if X8 = extended() then
+            out(pair(decrypt(), X7));
+            in(v);
+            0
+          else
+            0
+        else
+          0
+    else
+      0
+  else
+    0
+let TPM(TPM) =
+  in(Alice);
+  in(Parent);
+  in(X5);
+  if X5 = create() then
+    new k;
+    out(aenc(pair(created(), k), pk(priv(Alice))));
+    in(X7);
+    let X8 = adec(X7, priv(TPM)) in
+      let pair(X9, X10) = X8 in
+        if X10 = ref() then
+          if X9 = extend() then
+            if X10 = obt() then
+              0
+            else
+              out(extended());
+              in(X11);
+              let pair(X12, X13) = X11 in
+                let v = sdec(X13, k) in
+                  if X12 = quote() then
+                    out(revealSign(pair(quoted(), X13), priv(TPM)));
+                    0
+                  else
+                    0
+                else
+                  0
+              else
+                0
+          else
+            0
+        else
+          if X9 = extend() then
+            if X10 = obt() then
+              out(extended());
+              in(X11);
+              let pair(X12, X13) = X11 in
+                let v = sdec(X13, k) in
+                  if X12 = decrypt() then
+                    out(v);
+                    0
+                  else
+                    0
+                else
+                  0
+              else
+                0
+            else
+              0
+          else
+            0
+      else
+        0
+    else
+      0
+  else
+    0
+process: 
+  new dishonest;
+  event Dishonest(dishonest);
+  out(dishonest);
+  out(priv(dishonest));
+  ! new agent;
+  event Honest(agent);
+  out(agent);
+  out(pk(priv(agent)));
+  ! (
+    Alice(agent)
+   | 
+    Parent(agent)
+   | 
+    TPM(agent)
+  )
+end

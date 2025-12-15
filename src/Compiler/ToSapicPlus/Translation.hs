@@ -63,6 +63,7 @@ translateProcolHeader description = do
         step :: (FUNCTIONS, Int) -> [(T.Text, Bool)] -> [(T.Text, Bool)]
         step (f, arity) acc =
           case f of
+            UnDef "true" -> acc
             UnDef x ->
               (x <> "/" <> T.pack (show arity), functionIsPublic x) : acc
             _ ->

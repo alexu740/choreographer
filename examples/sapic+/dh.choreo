@@ -1,0 +1,10 @@
+Protocol:
+  {
+    A : A, B
+    B : A, B
+  }
+
+  lock(A). new Na. unlock. A->B: exp(g(), Na).
+  lock(B). new Nb. unlock. B->A: exp(g(), Nb).
+  lock(A). new m. unlock. A->B: senc(m, exp(exp(g(), Na), Nb)).
+  nil

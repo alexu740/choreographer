@@ -1,7 +1,7 @@
 theory ChoreoTheory
 begin
 builtins: asymmetric-encryption
-functions: pair/2, true/0 [private], priv/1 [private]
+functions: pair/2, priv/1 [private]
 let A(A) =
   in(B);
   new Na;
@@ -14,6 +14,10 @@ let A(A) =
       out(aenc(Nb, pk(priv(B))));
       event Secret(pair(Na, Nb), A, B);
       0
+    else
+      0
+  else
+    0
 let B(B) =
   in(A);
   in(X4);
@@ -29,6 +33,14 @@ let B(B) =
           event Request(B, A, 'StrongAuthBAPAIRAtomicNaAtomicNb', pair(Na, Nb), sid);
           event Secret(pair(Na, Nb), A, B);
           0
+        else
+          0
+      else
+        0
+    else
+      0
+  else
+    0
 process: 
   new dishonest;
   event Dishonest(dishonest);

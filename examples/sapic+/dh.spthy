@@ -1,0 +1,35 @@
+theory ChoreoTheory
+begin
+builtins: symmetric-encryption, diffie-hellman
+functions: g/0
+let A(A) =
+  in(B);
+  new Na;
+  out(EXP(g(), Na));
+  in(X3);
+  new m;
+  out(senc(m, EXP(X3, Na)));
+  0
+let B(B) =
+  in(A);
+  in(X2);
+  new Nb;
+  out(EXP(g(), Nb));
+  in(X4);
+  let m = sdec(X4, EXP(X2, Nb)) in
+    0
+  else
+    0
+process: 
+  new dishonest;
+  event Dishonest(dishonest);
+  out(dishonest);
+  ! new agent;
+  event Honest(agent);
+  out(agent);
+  ! (
+    A(agent)
+   | 
+    B(agent)
+  )
+end

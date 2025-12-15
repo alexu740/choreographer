@@ -69,12 +69,20 @@ constructCommmonRecipe description ls@(ft : fts) =
 ---------------------------------
 -- | Returns all recipes for composing the term in given a frame.
 composeSet :: SConstructors -> SFrame -> Term -> Set.Set SRecipe
-composeSet constructors state term =
+composeSet constructors state term = do
+  let equivClassMembers = findEquivalenceClass [] term
+  let equivRecipesSets = map (composeRecursiveSet constructors state) equivClassMembers
+  let directRecipeSets = map (composeDirectlySet frame) equivClassMembers
+  let equivRecipes = Set.unions equivRecipesSets
+  let directRecipes = Set.unions directRecipeSets
+
   Set.unions
-    [ composeDirectlySet frame term,
-      composeViaEquivalenceClassSet frame term,
-      composeRecipeSet knownRecipes term,
-      composeRecursiveSet constructors state term
+    [ --composeDirectlySet frame term,
+      directRecipes,
+--      composeViaEquivalenceClassSet frame term,
+      equivRecipes,
+      composeRecipeSet knownRecipes term
+--      composeRecursiveSet constructors state term
     ]
   where
     frame = mapping state
@@ -178,8 +186,7 @@ composeNoEquiv description frame term =
 composeViaEquivalenceClass :: ProtocolDescription -> SFrame -> Term -> Maybe SRecipe
 composeViaEquivalenceClass description frame t =
   firstJust
-    [ composeNoEquiv description frame rep
-    | rep <- findEquivalenceClass [] t
+    [ composeNoEquiv description frame rep | rep <- findEquivalenceClass [] t
     ]
 
 firstJust :: [Maybe a] -> Maybe a

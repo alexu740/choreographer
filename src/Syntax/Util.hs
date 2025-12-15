@@ -138,6 +138,9 @@ fromText func =
     "senc" -> SENC
     "revealSign" -> REVEALSIGN
     "sk" -> SK
+    "g" -> G
+    "exp" -> EXP
+    "mult" -> MULT
     _ -> UnDef func
 
 toText :: FUNCTIONS -> T.Text
@@ -171,6 +174,9 @@ toText REVEALVERIFY = "revealVerify"
 toText GETMESSAGE = "getMessage"
 toText PRIV = "priv"
 toText SK = "sk"
+toText G = "g"
+toText EXP = "EXP"
+toText MULT = "MULT"
 
 -- sapic
 toText (UnDef func) = func

@@ -205,7 +205,7 @@ applySubst s (EOperation f ts) = Composed f <$> traverse (applySubst s) ts
 composeViaEquivalenceClassSet :: Map.Map SVariable Term -> Term -> Set.Set SRecipe
 composeViaEquivalenceClassSet frame term =
   let reps :: Set.Set Term
-      reps = Set.fromList (findEquivalenceClass [] term)
+      reps = pTraceShowId(Set.fromList (findEquivalenceClass [] term))
   in Set.fromList
        [ RVariable x
        | (x, v) <- Map.toList frame
